@@ -78,3 +78,61 @@ if __name__ == "__main__":
     excel_file_location = "../Univac-IX/materials_db.xlsx" 
     print("Starting Material Engine Pipeline...")
     # run_pipeline("sample_object.jpg", excel_file_location)
+import numpy as np
+
+def calculate_pixel_to_physical_scale(f_objective, f_eyepiece, sensor_pixel_size_microns, object_distance_meters):
+    """
+    Calculates the true real-world size represented by a single camera pixel,
+    accounting for telescopic magnification optics.
+    """
+    # 1. Compute optical magnification
+    m_optical = f_objective / f_eyepiece
+    
+    # 2. Calculate the system's effective field of view scale factor
+    # True feature size on sensor = Real size * (f_effective / Distance)
+    effective_focal_length = f_objective * m_optical
+    
+    # 3. Size of one pixel in meters (e.g., 1.4 microns = 1.4e-6)
+    pixel_size_meters = sensor_pixel_size_microns * 1e-6
+    
+    # 4. Map one pixel to real world physical distance (meters per pixel)
+    meters_per_pixel = (pixel_size_meters * object_distance_meters) / effective_focal_length
+    
+    return meters_per_pixel
+
+def infer_molecular_density(meters_per_pixel, structural_bounding_box_pixels, lattice_constant_angstrom):
+    """
+    Bridges the macro image from a Tesla/Mobile camera down to the atomic scale.
+    Calculates how many atomic unit cells span the captured object.
+    """
+    # Convert pixels to actual physical size of the scanned part (e.g., a wing strut)
+    total_physical_width_meters = structural_bounding_box_pixels * meters_per_pixel
+    
+    # Convert Angstroms to meters (1 Angstrom = 1e-10 meters)
+    lattice_constant_meters = lattice_constant_angstrom * 1e-10
+    
+    # Calculate total atomic repetitions required for your Cosmos CAD engine
+    required_lattice_repetitions = total_physical_width_meters / lattice_constant_meters
+    
+    return int(required_lattice_repetitions)
+
+# --- SYSTEM INTEGRATION EXAMPLE FOR YOUR MAINFRAME ---
+# Scenario: A Tesla camera (f_obj=4.5mm) with a telescopic mod detects a component 5 meters away
+meters_per_px = calculate_pixel_to_physical_scale(
+    f_objective=45.0,        # 45mm telephoto/telescopic attachment
+    f_eyepiece=4.5,          # 4.5mm base receiver lens
+    sensor_pixel_size_microns=1.4, 
+    object_distance_meters=5.0
+)
+
+# If Univac-IX identifies the material as Titanium (Lattice Constant = 3.30 Angstroms)
+# and the object is 800 pixels wide in the camera feed:
+total_atoms_wide = infer_molecular_density(
+    meters_per_pixel=meters_per_px,
+    structural_bounding_box_pixels=800,
+    lattice_constant_angstrom=3.30
+)
+
+print(f"Mainframe Telemetry: Scale is {meters_per_px:.4e} meters per pixel.")
+print(f"Procedural Target: Generate a CAD model lattice with {total_atoms_wide} molecular repetitions.")
+
