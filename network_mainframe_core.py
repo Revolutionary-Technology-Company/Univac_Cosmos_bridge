@@ -8,6 +8,33 @@ temp_filename = f"cache/delta_{node_id}_{int(time.time())}.usda"
 # Add this code injection inside your network_mainframe_core.py script
 from univac_json_adapter import UnivacExcelJsonAdapter
 from cosmos_temporal_writer import CosmosTemporalMeshEngine
+# Insert this import block inside network_mainframe_core.py
+from univac_schema_cache import TelemetrySchemaValidator, HighPerformanceMemoryCacheEngine
+
+# Instantiate the caching coordinator engine
+cache_pipeline = HighPerformanceMemoryCacheEngine()
+
+async def audit_incoming_packet(self, packet, addr):
+    """Secured and optimized packet orchestration loop."""
+    node_id = packet.get("node_id", "UNREGISTERED_NODE")
+    
+    # STEP 1: AUTOMATED SCHEMA CHECK
+    is_valid_format, error_reason = TelemetrySchemaValidator.validate_packet(packet)
+    if not is_valid_format:
+        print(f"❌ SCHEMA DROPPED from {addr}: {error_reason}")
+        return # Terminate bad packets instantly before they hit memory or files
+
+    # STEP 2: RUN CACHED INVERSION PROCESSING
+    # Telemetry is verified safe. Pass to memory-locked computing blocks.
+    try:
+        resolved_json_matrix = cache_pipeline.process_telemetry_through_cache(packet)
+        
+        # STEP 3: STREAM OUTPUT FOR COSMOS OPENUSD COMPILATION
+        print(f"✔ Mainframe Optimized: Handled data flow for [{node_id}]. Ready for Cosmos USD compilation.")
+        # Forward resolved_json_matrix to your cosmos_temporal_writer modules here...
+        
+    except Exception as e:
+        print(f"💥 Mainframe calculation failure on node state processing: {str(e)}")
 
 # Instantiate the Excel calculation bridge adapter globally on the mainframe cluster
 excel_json_bridge = UnivacExcelJsonAdapter()
