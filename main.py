@@ -191,3 +191,46 @@ if __name__ == "__main__":
         delta_time=0.1  # Elapsed time since last video frame packet
     )
     print(f"-> Dynamic Moving Magnification Matrix Scale: {current_m:.6f}x")
+
+import numpy as np
+
+def calculate_moving_magnification_state(f_mm, initial_distance_m, v_los_mps, gyro_bias_rad, dt):
+    """
+    Computes both instantaneous magnification and its rate of change 
+    for moving client sensors (Tesla cameras, mobile app users).
+    """
+    # Convert focal length to meters
+    f_m = f_mm * 1e-3
+    
+    # Calculate current real-time distance along the line-of-sight path
+    current_distance_m = initial_distance_m - (v_los_mps * dt)
+    
+    # Boundary guard: Prevent division by zero or negative distance clipping
+    if current_distance_m <= 0.05:
+        return 0.0, 0.0
+        
+    # 1. Compute Instantaneous Magnification
+    m_instant = -f_m / current_distance_m
+    
+    # 2. Compute Magnification Velocity (dm/dt)
+    # This dictates how fast the lattice image scale is inflating/deflating
+    dm_dt = (m_instant ** 2) * v_los_mps / f_m
+    
+    # Adjust for rotational vibration using the gyro data
+    vibration_compensation_factor = np.cos(gyro_bias_rad)
+    adjusted_m = m_instant * vibration_compensation_factor
+    
+    return adjusted_m, dm_dt
+
+# --- MAINFRAME RUNTIME EXECUTION EXAMPLE ---
+# Scenario: A mobile user with 'Basic-Aviation-Knowledge' is tracking an aircraft part.
+# The user's vehicle is closing the gap at 15 meters per second (~33 mph).
+mag, rate = calculate_moving_magnification_state(
+    f_mm=50.0,             # 50mm lens array
+    initial_distance_m=10.0, # 10 meters away initially
+    v_los_mps=15.0,        # Closing speed
+    gyro_bias_rad=0.02,    # Micro-shake from shaky hands detected by IMU
+    dt=0.3                 # 300 milliseconds into the capture loop
+)
+
+print(f"Mainframe Matrix Scale -> Current Mag: {mag:.6e}x | Scale Rate of Change: {rate:.4f}/sec")
