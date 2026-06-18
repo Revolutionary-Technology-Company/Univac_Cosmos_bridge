@@ -5,6 +5,39 @@ import numpy as np
 from provisioning_engine import MainframeProvisioningEngine
 from cosmos_voxel_writer import generate_cosmos_voxel_usd_layer
 temp_filename = f"cache/delta_{node_id}_{int(time.time())}.usda"
+# Add this code injection inside your network_mainframe_core.py script
+from univac_json_adapter import UnivacExcelJsonAdapter
+from cosmos_temporal_writer import CosmosTemporalMeshEngine
+
+# Instantiate the Excel calculation bridge adapter globally on the mainframe cluster
+excel_json_bridge = UnivacExcelJsonAdapter()
+temporal_mesh_compiler = CosmosTemporalMeshEngine()
+
+async def process_safe_packet_flow(clean_packet, voxel_id, time_frame):
+    """
+    Takes safe data, pushes it through your synced calculation excel sheets, 
+    and outputs the resulting JSON directly to the Cosmos USD layer builder.
+    """
+    # 1. Trigger the cross-page calculation engine and extract the calculated JSON packet
+    calculated_json_str = excel_json_bridge.compute_and_serialize_to_json(
+        raw_sensor_permittivity=clean_packet["permittivity"],
+        raw_conductivity=clean_packet["conductivity"]
+    )
+    
+    # 2. Parse the verified calculation JSON payload
+    calc_data = json.loads(calculated_json_str)
+    material_profile = calc_data["inferred_material_properties"]
+    lattice_profile = calc_data["molecular_lattice_structure"]
+
+    # 3. Pipe the dynamically calculated parameters directly into your time-series OpenUSD files
+    temporal_mesh_compiler.append_temporal_voxel_data(
+        voxel_id=voxel_id,
+        time_sample_index=time_frame,
+        ecef_xyz=clean_packet["gps_ecef"],
+        material_state=material_profile["classification_state"],
+        lattice_spacing=lattice_profile["spacing_angstrom"]
+    )
+    print(f"✔ Mainframe Pipeline Synced: Excel calculations baked cleanly to Cosmos USD frame: {time_frame}")
 
 # Global Mainframe Registry tracking hardware anomaly counters
 MALFUNCTIONING_NODE_REGISTRY = {}
