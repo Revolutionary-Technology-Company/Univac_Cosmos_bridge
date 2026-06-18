@@ -78,7 +78,6 @@ if __name__ == "__main__":
     excel_file_location = "../Univac-IX/materials_db.xlsx" 
     print("Starting Material Engine Pipeline...")
     # run_pipeline("sample_object.jpg", excel_file_location)
-import numpy as np
 
 def calculate_pixel_to_physical_scale(f_objective, f_eyepiece, sensor_pixel_size_microns, object_distance_meters):
     """
@@ -136,3 +135,59 @@ total_atoms_wide = infer_molecular_density(
 print(f"Mainframe Telemetry: Scale is {meters_per_px:.4e} meters per pixel.")
 print(f"Procedural Target: Generate a CAD model lattice with {total_atoms_wide} molecular repetitions.")
 
+import cv2  # Requires pip install opencv-python
+
+class MainframeImageProcessor:
+    @staticmethod
+    def normalize_illumination(frame):
+        """
+        Retinex-based normalization to ensure identical material detection 
+        in blinding sunlight or complete darkness.
+        """
+        # Convert frame to float32 to perform precise logarithmic division
+        img_float = np.float32(frame) + 1.0
+        
+        # Simulate the environmental illumination using a Gaussian Blur
+        gaussian_blur = cv2.GaussianBlur(img_float, (125, 125), 0)
+        
+        # Isolate the core material reflectance (Log space subtraction)
+        log_reflectance = cv2.log(img_float) - cv2.log(gaussian_blur)
+        
+        # Normalize back to standard 8-bit image scale for Univac-IX
+        normalized_output = cv2.normalize(log_reflectance, None, 0, 255, cv2.NORM_MINMAX)
+        return np.uint8(normalized_output)
+
+    @staticmethod
+    def calculate_moving_magnification(focal_length_mm, distance_meters, relative_velocity_mps, delta_time):
+        """
+        Adjusts spatial magnification dynamically for moving assets (e.g., Tesla cameras).
+        """
+        # Update the real-time distance to target based on current movement vectors
+        updated_distance = distance_meters - (relative_velocity_mps * delta_time)
+        
+        if updated_distance <= 0.1:
+            raise ValueError("Collision imminent or distance too close for telescope optics.")
+            
+        # Standard lens magnification variant for real-time tracking
+        dynamic_magnification = focal_length_mm / (updated_distance * 1000.0)
+        return dynamic_magnification
+
+# --- EXAMPLE TESTING BLOCK ON THE MAINFRAME ---
+if __name__ == "__main__":
+    print("Initializing Video and Environmental Tracking Modules...")
+    
+    # Simulate data packet received from a client app or smart vehicle
+    sample_raw_frame = np.random.randint(0, 255, (1080, 1920, 3), dtype=np.uint8)
+    
+    # 1. Strip the lighting variations out of the video frame
+    clean_frame = MainframeImageProcessor.normalize_illumination(sample_raw_frame)
+    print("-> Lighting and shadows normalized. Frame ready for Univac-IX evaluation.")
+    
+    # 2. Adjust magnification factors for a vehicle closing in at 25 m/s (approx 55 mph)
+    current_m = MainframeImageProcessor.calculate_moving_magnification(
+        focal_length_mm=45.0,
+        distance_meters=15.0,
+        relative_velocity_mps=25.0,
+        delta_time=0.1  # Elapsed time since last video frame packet
+    )
+    print(f"-> Dynamic Moving Magnification Matrix Scale: {current_m:.6f}x")
