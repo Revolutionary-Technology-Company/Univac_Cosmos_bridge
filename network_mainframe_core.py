@@ -1,6 +1,9 @@
 import asyncio
 import json
 import numpy as np
+# Add these lines to the top of your network_mainframe_core.py
+from provisioning_engine import MainframeProvisioningEngine
+from cosmos_voxel_writer import generate_cosmos_voxel_usd_layer
 
 # Global Mainframe Registry tracking hardware anomaly counters
 MALFUNCTIONING_NODE_REGISTRY = {}
