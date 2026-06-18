@@ -4,6 +4,7 @@ import numpy as np
 # Add these lines to the top of your network_mainframe_core.py
 from provisioning_engine import MainframeProvisioningEngine
 from cosmos_voxel_writer import generate_cosmos_voxel_usd_layer
+temp_filename = f"cache/delta_{node_id}_{int(time.time())}.usda"
 
 # Global Mainframe Registry tracking hardware anomaly counters
 MALFUNCTIONING_NODE_REGISTRY = {}
@@ -99,6 +100,9 @@ class MainframeSafetyDiagnosticGuard:
 
 
 async def main():
+    # Inside network_mainframe_core.py async loop
+    composer.stitch_client_scan_delta(temp_filename, snr_score=current_snr)
+    
     # Instantiate the monitoring engine core
     safety_guard = MainframeSafetyDiagnosticGuard()
     
