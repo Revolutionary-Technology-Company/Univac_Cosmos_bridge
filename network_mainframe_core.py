@@ -17,18 +17,22 @@ class MainframeNetworkProtocol(asyncio.DatagramProtocol):
         print("Sovereign Mainframe Network Layer: Asynchronous socket port opened successfully.")
 
     def datagram_received(self, data, addr):
-        """Asynchronously intercepts raw sensor packets directly off the network buffer."""
-        try:
-            # Decode the incoming UDP network string byte array
-            payload_str = data.decode('utf-8')
-            packet = json.loads(payload_str)
+        """Modified async parser forcing structural signature verification checks first."""
+        payload_str = data.decode('utf-8')
+        
+        # Call the cryptographic engine validation method
+        is_authenticated, log_details = SovereignCryptoAuthEngine.verify_incoming_packet(payload_str)
+        
+        if not is_authenticated:
+            print(f"🔒 SECURITY DROP from {addr}: {log_details}")
+            return # Terminate operational flow immediately before reading parameters
             
-            # Instantly forward packet to the integrated safety and diagnostic engine
-            asyncio.create_task(self.safety_guard.audit_incoming_packet(packet, addr))
-            
-        except (json.JSONDecodeError, UnicodeDecodeError):
-            print(f"⚠️  Network Intercept Warning: Dropping malformed packet string from {addr}")
-
+        # If true, extract nested inner payload to forward down your Univac mesh channel
+        envelope = json.loads(payload_str)
+        clean_packet = envelope["payload"]
+        
+        # Proceed safely to evaluation and NVIDIA Cosmos mapping
+        asyncio.create_task(self.safety_guard.audit_incoming_packet(clean_packet, addr))
 
 class MainframeSafetyDiagnosticGuard:
     def __init__(self):
